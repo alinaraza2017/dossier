@@ -86,7 +86,7 @@ class _ProPaywallScreenState extends State<ProPaywallScreen> {
           _buildFeature('Document vault', 'Store passport, IELTS and transcripts'),
           _buildFeature('Export, calendar and dark mode', 'PDF report, calendar adding, dark theme'),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 28),
 
           // Yearly Plan Card (Pre-selected)
           GestureDetector(
@@ -142,7 +142,7 @@ class _ProPaywallScreenState extends State<ProPaywallScreen> {
                     ],
                   ),
                   Positioned(
-                    top: -30,
+                    top: -37,
                     right: 0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

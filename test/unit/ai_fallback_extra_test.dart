@@ -39,4 +39,14 @@ void main() {
     );
     expect(items, ['Birth Certificate', 'Bank Statement', 'Police Clearance Letter']);
   });
+
+  test('Priority works with UUID string ids and nearest deadline first', () async {
+    final items = await ai.generatePriority(activeApplications: [
+      {'id': 'b-uuid', 'name': 'DAAD', 'daysRemaining': 15, 'progressPercent': 30, 'remainingRequirements': 7},
+      {'id': 'a-uuid', 'name': 'Erasmus', 'daysRemaining': 5, 'progressPercent': 50, 'remainingRequirements': 3},
+    ]);
+    expect(items.first.scholarshipName, 'Erasmus');
+    expect(items.first.scholarshipId, 'a-uuid');
+    expect(items.first.rank, 1);
+  });
 }

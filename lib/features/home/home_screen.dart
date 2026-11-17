@@ -323,7 +323,7 @@ class _PlanBanner extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     atLimit
-                        ? 'Limit reached. Submitted applications do not count.'
+                        ? 'Limit reached · submitted ones do not count'
                         : 'Works offline, no account needed.',
                     style: const TextStyle(
                       fontFamily: 'Poppins',

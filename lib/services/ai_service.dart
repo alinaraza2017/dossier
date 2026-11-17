@@ -10,7 +10,7 @@ class AiPriorityItem {
   final String reason;
   final int daysRemaining;
   final int progressPercent;
-  final int? scholarshipId;
+  final String? scholarshipId;
 
   const AiPriorityItem({
     required this.rank,
@@ -160,7 +160,7 @@ ${jsonEncode(sanitizedData)}
             reason: reason,
             daysRemaining: localMatch['daysRemaining'] as int? ?? 0,
             progressPercent: localMatch['progressPercent'] as int? ?? 0,
-            scholarshipId: localMatch['id'] as int?,
+            scholarshipId: localMatch['id']?.toString(),
           ),
         );
       }
@@ -459,7 +459,7 @@ ${jsonEncode(sanitizedData)}
           reason: reason,
           daysRemaining: days,
           progressPercent: prog,
-          scholarshipId: app['id'] as int?,
+          scholarshipId: app['id']?.toString(),
         ),
       );
     }
