@@ -227,7 +227,7 @@ ${jsonEncode(sanitizedData)}
   // Core API Request Helper (Google Gemini 1.5 Flash default)
   // ==========================================
   Future<String> _callGeminiApi(String prompt, String apiKey) async {
-    final model = _settings.getAiModel() ?? 'gemini-1.5-flash';
+    final model = _settings.getAiModel() ?? 'gemini-2.5-flash';
     final url = Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey',
     );

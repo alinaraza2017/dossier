@@ -130,3 +130,39 @@ The document describes **version 2.0 (Free + Dossier Pro)**. The app implements 
 **APK size (<25 MB):** **[untested]**, because I cannot build an APK here. Removing the unused `printing` / `pdf` / `file_picker` / `in_app_purchase` packages lowers the risk. Build with:
 `flutter build apk --release --split-per-abi`
 and install `app-arm64-v8a-release.apk`. Flutter apps of this size are typically around 10–20 MB per ABI; check the file size before submitting.
+
+---
+
+## 7. Status after fixes (approved Tier 1 + Tier 2), re-tested in the running app
+
+| Finding | Status |
+|---|---|
+| C1/C2 AI tabs static | **Fixed.** Real checklist and priority/summary wired in; verified with new text; saving adds items and skips duplicates |
+| C3/C4 Fake date, trial, profile, usage | **Fixed.** Real date and greeting; honest "Free plan · X of 5 active" everywhere |
+| C5 Fake payment/trial messages | **Fixed.** All Pro actions say "Preview: … Phase 2" |
+| C6 gap_report.md overstated | **Rewritten** honestly |
+| C7 Notification permission never requested | **Fixed.** Requested after onboarding and on launch (device behaviour: check on phone) |
+| C8 Details overflow | **Fixed** |
+| U1 Random requirement order | **Fixed** (sortOrder in demo data, ordered query) |
+| U2/U3 Deadlines colours and wording | **Fixed.** Urgent / Due soon / Later / Overdue / Submitted groups; plural and "No requirements yet" |
+| (new) Deadlines filter chips did nothing | **Fixed** |
+| U4 See all | **Fixed.** Switches to the Deadlines tab |
+| U5 Submitted hidden | **Fixed.** "Submitted (n)" section on Home, and a Submitted filter |
+| U6 AI screen without back arrow | **Fixed** |
+| U7 Fonts | **Fixed.** Poppins bundled; consistent offline |
+| U8 Launcher icon | **Fixed.** New "D" icon |
+| U9, U12, U13, U14 (dialog, switches, badge, vault dates) | **Fixed** |
+| B1 Free limit | **Fixed.** Upgrade sheet at 5 active, including re-opening a Submitted one |
+| B2–B5 Field rules | **Fixed.** Name 2–80, country optional ≤60, notes ≤1000, auto https, past-date confirmation, duplicate warning |
+| B6 Undo | **Fixed.** 5-second Undo for applications and requirements |
+| B7 Ready to Submit warning | **Fixed** |
+| B8 Empty requirement add | **Fixed.** Shows a hint |
+| B9 Reminder settings not saved | **Fixed.** Switch persisted and applied (cancels or reschedules all); Pro days/time shown locked |
+| B10 Dead Settings rows | **Fixed.** CSV export (share sheet), Clear data (type DELETE), Help/privacy dialog, AI info; Sign out removed (no account) |
+| B11 Unreachable screens | **Fixed.** Upgrade sheet live; Sign in, Payment sheet, Trial ended, Choose 5 and Vault reachable as labelled previews |
+| (new) Priority crashed on UUID ids | **Fixed** + regression test |
+| (new) Extractor dropped "CV" and kept lead-in phrases | **Fixed** + tests |
+| (new) Default Gemini model `gemini-1.5-flash` (retired) | Changed to `gemini-2.5-flash` (not live-tested: no key) |
+| APK size | 7 unused packages removed and google_fonts replaced by bundled fonts. **Still to measure** after `flutter build apk --split-per-abi` |
+
+Tests: **34 passing** (10 new). `flutter analyze`: **0 issues**.
