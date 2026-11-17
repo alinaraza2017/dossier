@@ -43,7 +43,12 @@ class _RequirementsScreenState extends State<RequirementsScreen> {
 
   Future<void> _handleAddRequirement() async {
     final title = _addController.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Type a document or task first.')),
+      );
+      return;
+    }
 
     setState(() => _isAdding = true);
     try {
@@ -58,8 +63,9 @@ class _RequirementsScreenState extends State<RequirementsScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final msg = e is ArgumentError ? '${e.message}' : 'Failed to add requirement: $e';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add requirement: $e')),
+          SnackBar(content: Text(msg)),
         );
       }
     } finally {
@@ -76,6 +82,7 @@ class _RequirementsScreenState extends State<RequirementsScreen> {
         content: TextField(
           controller: editController,
           autofocus: true,
+          maxLength: 120,
           decoration: const InputDecoration(
             labelText: 'Requirement Name',
             hintText: 'e.g. Motivation Letter',
@@ -86,7 +93,7 @@ class _RequirementsScreenState extends State<RequirementsScreen> {
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Save'),
           ),
@@ -116,10 +123,23 @@ class _RequirementsScreenState extends State<RequirementsScreen> {
 
     if (confirmed == true && mounted) {
       final reqProvider = context.read<RequirementProvider>();
+      final sProvider = context.read<ScholarshipProvider>();
+      final removed = reqProvider.requirements.firstWhere((r) => r.id == id);
       await reqProvider.deleteRequirement(id);
+      await sProvider.refreshProgressFor(widget.scholarshipId);
       if (mounted) {
-        context.read<ScholarshipProvider>().refreshProgressFor(
-          widget.scholarshipId,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('"$title" deleted.'),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () async {
+                await reqProvider.restoreRequirement(removed);
+                await sProvider.refreshProgressFor(widget.scholarshipId);
+              },
+            ),
+          ),
         );
       }
     }

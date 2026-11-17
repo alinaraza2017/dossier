@@ -10,6 +10,11 @@ class MainNavigation extends StatefulWidget {
 
   const MainNavigation({super.key, this.initialIndex = 0});
 
+  /// Lets a tab (e.g. Home "See all") switch to another bottom tab.
+  static void switchTab(BuildContext context, int index) {
+    context.findAncestorStateOfType<_MainNavigationState>()?.selectTab(index);
+  }
+
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
@@ -22,6 +27,8 @@ class _MainNavigationState extends State<MainNavigation> {
     super.initState();
     _currentIndex = widget.initialIndex;
   }
+
+  void selectTab(int index) => setState(() => _currentIndex = index);
 
   final List<Widget> _screens = const [
     HomeScreen(),
@@ -36,7 +43,9 @@ class _MainNavigationState extends State<MainNavigation> {
 
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: Container(
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
         height: 72,
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkCardSurface : AppColors.cardSurface,
@@ -57,6 +66,7 @@ class _MainNavigationState extends State<MainNavigation> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -66,7 +76,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
     return Expanded(
       child: InkWell(
-        onTap: () => setState(() => _currentIndex = index),
+        onTap: () => selectTab(index),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

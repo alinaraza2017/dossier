@@ -60,8 +60,8 @@ class UpgradeSheet extends StatelessWidget {
           const SizedBox(height: 14),
 
           // Title & copy (Fig 13.18)
-          const Text(
-            'You have 5 active applications',
+          Text(
+            'You have $activeCount active applications',
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 18,
@@ -70,7 +70,7 @@ class UpgradeSheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            'The Free plan keeps 5 active at a time. Mark one as Submitted, delete one, or upgrade for unlimited applications.',
+            'The Free plan keeps 5 active at a time. Mark one as Submitted, delete one, or upgrade to Pro for unlimited applications.',
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 12,
@@ -96,13 +96,13 @@ class UpgradeSheet extends StatelessWidget {
               const SizedBox(height: 6),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     'Active applications',
                     style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.textSecondary),
                   ),
                   Text(
-                    '5 / 5',
+                    '$activeCount / 5',
                     style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -115,9 +115,9 @@ class UpgradeSheet extends StatelessWidget {
           PrimaryButton(
             label: 'Try Pro free for 7 days',
             onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
+              final navigator = Navigator.of(context);
+              navigator.pop();
+              navigator.push(
                 MaterialPageRoute(builder: (_) => const ProPaywallScreen()),
               );
             },

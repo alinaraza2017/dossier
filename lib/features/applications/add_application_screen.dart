@@ -21,7 +21,7 @@ class AddApplicationScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: ApplicationForm(
             initialScholarship: scholarshipToEdit,
             onSave: (scholarship) async {

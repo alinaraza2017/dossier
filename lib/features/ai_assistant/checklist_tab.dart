@@ -77,13 +77,21 @@ class _ChecklistTabState extends State<ChecklistTab> {
       final reqProvider = context.read<RequirementProvider>();
       final sProvider = context.read<ScholarshipProvider>();
 
-      await reqProvider.addManyRequirements(_selectedScholarshipId!, items);
+      final result =
+          await reqProvider.addManyRequirements(_selectedScholarshipId!, items);
       await sProvider.refreshProgressFor(_selectedScholarshipId!);
+      final name = sProvider.scholarships
+          .firstWhere((s) => s.id == _selectedScholarshipId,
+              orElse: () => sProvider.scholarships.first)
+          .name;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Saved ${items.length} requirements to scholarship!'),
+            content: Text(
+              'Added ${result.added} to $name'
+              '${result.skipped > 0 ? ' · ${result.skipped} already existed and were skipped' : ''}',
+            ),
             backgroundColor: AppColors.successGreen,
           ),
         );
@@ -142,15 +150,20 @@ class _ChecklistTabState extends State<ChecklistTab> {
     final theme = Theme.of(context);
     final aiProvider = context.watch<AiProvider>();
     final sProvider = context.watch<ScholarshipProvider>();
-    final scholarships = sProvider.scholarships;
+    final scholarships = sProvider.activeScholarships;
 
+    // Keep the selection valid (e.g. after a delete or a status change)
+    if (_selectedScholarshipId != null &&
+        !scholarships.any((s) => s.id == _selectedScholarshipId)) {
+      _selectedScholarshipId = null;
+    }
     // Automatically set default selected scholarship if none selected
     if (_selectedScholarshipId == null && scholarships.isNotEmpty) {
       _selectedScholarshipId = scholarships.first.id;
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -163,7 +176,9 @@ class _ChecklistTabState extends State<ChecklistTab> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Copy requirements from a scholarship announcement or university website. AI will organize them into an actionable checklist.',
+            aiProvider.isAiConfigured
+                ? 'Copy requirements from a scholarship website. Gemini AI turns them into a checklist you can review before saving.'
+                : 'Copy requirements from a scholarship website. Dossier turns them into a checklist you can review before saving. (Offline mode: smart rule-based extraction.)',
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -180,6 +195,7 @@ class _ChecklistTabState extends State<ChecklistTab> {
             child: TextField(
               controller: _pasteController,
               maxLines: 5,
+              maxLength: 4000,
               style: theme.textTheme.bodyMedium,
               decoration: const InputDecoration(
                 hintText:
@@ -373,7 +389,10 @@ class _ChecklistTabState extends State<ChecklistTab> {
                     items: scholarships.map((s) {
                       return DropdownMenuItem<String>(
                         value: s.id,
-                        child: Text('${s.name} (${s.country})'),
+                        child: Text(
+                          s.country.isEmpty ? s.name : '${s.name} (${s.country})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       );
                     }).toList(),
                     onChanged: (id) {

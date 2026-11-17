@@ -20,7 +20,7 @@ class PrioritySummaryTab extends StatelessWidget {
     final activeApps = sProvider.activeScholarships;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -74,7 +74,7 @@ class PrioritySummaryTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 AppButton(
-                  text: 'Which Application Should I Work On First?',
+                  text: 'Analyze My Applications',
                   icon: Icons.lightbulb_outline_rounded,
                   type: AppButtonType.primary,
                   isLoading: aiProvider.isLoadingPriority,
@@ -88,7 +88,12 @@ class PrioritySummaryTab extends StatelessWidget {
                               app.id,
                             );
                           }
+                          // One request returns both the order and the summary (§14.2)
                           aiProvider.generatePriority(
+                            activeScholarships: activeApps,
+                            progressMap: progressMap,
+                          );
+                          aiProvider.generateProgressSummary(
                             activeScholarships: activeApps,
                             progressMap: progressMap,
                           );

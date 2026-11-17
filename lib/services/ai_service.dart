@@ -343,20 +343,29 @@ ${jsonEncode(sanitizedData)}
           RegExp(r'[\r\n,;•\-\*\.]+|and\s+(?=[a-z])', caseSensitive: false),
         )
         .map((s) => s.trim())
-        .where((s) => s.length > 2)
+        .where((s) => s.length >= 2)
         .toList();
 
     for (var segment in segments) {
       // Clean leading conversational text
-      segment = segment
-          .replaceAll(
-            RegExp(
-              r'^(applicants must provide|must have|including|provide a valid|provide a|provide|a valid|a)\s+',
-              caseSensitive: false,
-            ),
-            '',
-          )
-          .trim();
+      // Strip lead-in phrases repeatedly, e.g. "Applicants must submit a valid ..."
+      final leadIn = RegExp(
+        r'^(?:(?:applicants?|students?|candidates?|you)\s+)?'
+        r'(?:(?:must|should|will|need to|needs to|are required to|is required to|have to)\s+)?'
+        r'(?:also\s+)?'
+        r'(?:submit|provide|upload|include|including|send|attach|bring|have|need|requires?|required)?\s*'
+        r'(?:(?:a|an|the|your|one|valid|copy of|copies of|scanned|official|recent)\s+)*',
+        caseSensitive: false,
+      );
+      String previous;
+      do {
+        previous = segment;
+        segment = segment.replaceFirst(leadIn, '').trim();
+      } while (segment != previous && segment.isNotEmpty);
+      segment = segment.replaceFirst(
+        RegExp(r'^(?:also|plus|as well as)\s+', caseSensitive: false),
+        '',
+      ).trim();
       if (segment.isEmpty) continue;
 
       // Check for quantity (e.g., "two recommendation letters" or "2 recommendation letters")

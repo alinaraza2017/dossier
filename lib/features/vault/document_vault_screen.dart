@@ -24,7 +24,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
       'type': 'PDF',
       'size': '0.9 MB',
       'usedIn': 'Used in 3 applications',
-      'expiry': 'Expires 18 Nov',
+      'expiry': 'Expires 29 Dec',
       'isExpiringSoon': true,
     },
     {
@@ -198,7 +198,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Your IELTS certificate expires in 42 days. Check that it is still valid for DAAD.',
+                    'Your IELTS certificate expires on 29 Dec 2026. Check that it is still valid for DAAD.',
                     style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: AppColors.chipDueSoonText),
                   ),
                 ),
@@ -213,7 +213,7 @@ class _DocumentVaultScreenState extends State<DocumentVaultScreen> {
             label: 'Upload document',
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Selecting document file (PDF, JPG, PNG up to 10 MB)...')),
+                const SnackBar(content: Text('Preview: the document vault (Firebase Storage) is part of Phase 2.')),
               );
             },
           ),

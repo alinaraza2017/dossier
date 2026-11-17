@@ -13,6 +13,9 @@ class ScholarshipProvider extends ChangeNotifier {
   final NotificationService _notificationService;
   static const _uuid = Uuid();
 
+  /// Free plan keeps at most 5 active (non-submitted) applications (§7.1).
+  static const int freeActiveLimit = 5;
+
   List<Scholarship> _scholarships = [];
   Map<String, ({int completed, int total})> _progressMap = {};
   bool _isLoading = false;
@@ -138,6 +141,47 @@ class ScholarshipProvider extends ChangeNotifier {
     }
   }
 
+  /// Deletes an application and returns what was removed so the UI can
+  /// offer Undo (§18: confirmation, then a 5-second Undo snackbar).
+  Future<({Scholarship? scholarship, List<Requirement> requirements})>
+      deleteScholarshipWithBackup(String id) async {
+    final scholarship = await _scholarshipRepo.getById(id);
+    final reqs = await _requirementRepo.getForScholarship(id);
+    await deleteScholarship(id);
+    return (scholarship: scholarship, requirements: reqs);
+  }
+
+  Future<void> restoreScholarship(
+      Scholarship scholarship, List<Requirement> requirements) async {
+    await _scholarshipRepo.insert(scholarship);
+    await _requirementRepo.insertMany(requirements);
+    await _notificationService.syncRemindersForScholarship(scholarship);
+    await loadScholarships();
+  }
+
+  /// Re-applies reminders for every application (after the global
+  /// reminders switch changes, §17).
+  Future<void> resyncAllReminders({required bool enabled}) async {
+    for (final s in _scholarships) {
+      if (enabled) {
+        await _notificationService.syncRemindersForScholarship(s);
+      } else {
+        await _notificationService.cancelForScholarship(s.id);
+      }
+    }
+    notifyListeners();
+  }
+
+  /// Settings › Clear data on this phone (§17): removes every application,
+  /// requirement and scheduled reminder.
+  Future<void> clearAllData() async {
+    await _notificationService.cancelAll();
+    for (final s in List.of(_scholarships)) {
+      await _scholarshipRepo.delete(s.id);
+    }
+    await loadScholarships();
+  }
+
   Future<void> deleteScholarship(String id) async {
     try {
       await _notificationService.cancelForScholarship(id);
@@ -155,6 +199,11 @@ class ScholarshipProvider extends ChangeNotifier {
     _progressMap[scholarshipId] = counts;
     notifyListeners();
   }
+
+  /// Gives demo requirements a stable display order.
+  List<Requirement> _ordered(List<Requirement> items) => [
+        for (var i = 0; i < items.length; i++) items[i].copyWith(sortOrder: i),
+      ];
 
   Future<void> loadSampleData() async {
     final now = DateTime.now().toUtc().toIso8601String();
@@ -176,14 +225,14 @@ class ScholarshipProvider extends ChangeNotifier {
       ),
     );
 
-    await _requirementRepo.insertMany([
+    await _requirementRepo.insertMany(_ordered([
       Requirement(id: _uuid.v4(), scholarshipId: s1.id, title: 'Passport', isDone: true, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s1.id, title: 'IELTS Certificate', isDone: true, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s1.id, title: 'Academic Transcript', isDone: true, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s1.id, title: 'CV', isDone: false, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s1.id, title: 'Motivation Letter', isDone: false, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s1.id, title: 'Recommendation Letter', isDone: false, createdAt: now, updatedAt: now),
-    ]);
+    ]));
 
     final s2Id = _uuid.v4();
     final s2 = await addScholarship(
@@ -201,7 +250,7 @@ class ScholarshipProvider extends ChangeNotifier {
       ),
     );
 
-    await _requirementRepo.insertMany([
+    await _requirementRepo.insertMany(_ordered([
       Requirement(id: _uuid.v4(), scholarshipId: s2.id, title: 'Application Form', isDone: true, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s2.id, title: 'Curriculum Vitae (Europass)', isDone: true, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s2.id, title: 'Letter of Motivation', isDone: true, createdAt: now, updatedAt: now),
@@ -212,7 +261,7 @@ class ScholarshipProvider extends ChangeNotifier {
       Requirement(id: _uuid.v4(), scholarshipId: s2.id, title: 'Recommendation Letter 2', isDone: false, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s2.id, title: 'Study Plan', isDone: false, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s2.id, title: 'Proof of Employment / Internship', isDone: false, createdAt: now, updatedAt: now),
-    ]);
+    ]));
 
     final s3Id = _uuid.v4();
     final s3 = await addScholarship(
@@ -230,13 +279,13 @@ class ScholarshipProvider extends ChangeNotifier {
       ),
     );
 
-    await _requirementRepo.insertMany([
+    await _requirementRepo.insertMany(_ordered([
       Requirement(id: _uuid.v4(), scholarshipId: s3.id, title: 'Online Application Form', isDone: true, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s3.id, title: 'Motivation Letter', isDone: true, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s3.id, title: 'Proof of Language Proficiency', isDone: true, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s3.id, title: 'School Certificates', isDone: true, createdAt: now, updatedAt: now),
       Requirement(id: _uuid.v4(), scholarshipId: s3.id, title: 'Medical Certificate', isDone: false, createdAt: now, updatedAt: now),
-    ]);
+    ]));
 
     await loadScholarships();
   }

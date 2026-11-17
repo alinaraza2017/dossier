@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/shared_design_widgets.dart';
+import 'package:provider/provider.dart';
+import '../../providers/scholarship_provider.dart';
+import '../../services/local_settings_service.dart';
+import '../billing/pro_paywall_screen.dart';
 
 class ReminderSettingsScreen extends StatefulWidget {
   const ReminderSettingsScreen({super.key});
@@ -10,11 +14,36 @@ class ReminderSettingsScreen extends StatefulWidget {
 }
 
 class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
-  bool _deadlineReminders = true;
-  bool _trialBillingAlerts = true;
+  // Saved in shared_preferences so the choice survives restarts (§17).
+  bool _deadlineReminders = LocalSettingsService.instance.areRemindersEnabled();
+  bool _trialBillingAlerts =
+      LocalSettingsService.instance.areBillingAlertsEnabled();
 
-  final Set<int> _selectedDays = {14, 7, 2, 1};
-  TimeOfDay _reminderTime = const TimeOfDay(hour: 9, minute: 0);
+  // Free plan: fixed 7 and 2 days before at 9:00 AM. Custom days/time are Pro.
+  final Set<int> _selectedDays = {7, 2};
+
+  void _openPro() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ProPaywallScreen()),
+    );
+  }
+
+  Future<void> _setDeadlineReminders(bool value) async {
+    setState(() => _deadlineReminders = value);
+    await LocalSettingsService.instance.setRemindersEnabled(value);
+    if (!mounted) return;
+    // Turning reminders off cancels them all; on reschedules them (§17).
+    await context.read<ScholarshipProvider>().resyncAllReminders(enabled: value);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(value
+            ? 'Reminders scheduled for all active applications.'
+            : 'All deadline reminders cancelled.'),
+      ),
+    );
+  }
 
   final List<int> _availableOffsets = [30, 14, 7, 3, 2, 1, 0];
 
@@ -58,9 +87,10 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
                     'For all applications',
                     style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.textSecondary),
                   ),
-                  activeThumbColor: AppColors.secondaryTeal,
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: AppColors.secondaryTeal,
                   value: _deadlineReminders,
-                  onChanged: (val) => setState(() => _deadlineReminders = val),
+                  onChanged: _setDeadlineReminders,
                 ),
                 const Divider(height: 1),
                 SwitchListTile(
@@ -73,9 +103,13 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
                     'Trial ending, payment problems',
                     style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.textSecondary),
                   ),
-                  activeThumbColor: AppColors.secondaryTeal,
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: AppColors.secondaryTeal,
                   value: _trialBillingAlerts,
-                  onChanged: (val) => setState(() => _trialBillingAlerts = val),
+                  onChanged: (val) {
+                    setState(() => _trialBillingAlerts = val);
+                    LocalSettingsService.instance.setBillingAlertsEnabled(val);
+                  },
                 ),
               ],
             ),
@@ -117,23 +151,7 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
                         isChecked ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
                         color: isChecked ? AppColors.secondaryTeal : AppColors.border,
                       ),
-                      onTap: () {
-                        setState(() {
-                          if (isChecked) {
-                            if (_selectedDays.length > 1) {
-                              _selectedDays.remove(offset);
-                            }
-                          } else {
-                            if (_selectedDays.length < 5) {
-                              _selectedDays.add(offset);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('You can choose up to 5 reminder days.')),
-                              );
-                            }
-                          }
-                        });
-                      },
+                      onTap: _openPro,
                     ),
                     if (offset != _availableOffsets.last) const Divider(height: 1, indent: 16),
                   ],
@@ -146,15 +164,7 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
 
           // Reminder Time Card
           AppCard(
-            onTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: _reminderTime,
-              );
-              if (picked != null) {
-                setState(() => _reminderTime = picked);
-              }
-            },
+            onTap: _openPro,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -172,7 +182,7 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
                   ],
                 ),
                 Text(
-                  _reminderTime.format(context),
+                  '09:00',
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 14,
@@ -186,7 +196,7 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
 
           const SizedBox(height: 10),
           const Text(
-            'Choose up to 5 reminders. New applications use these days; you can still change them for each application.',
+            'Free plan: every application is reminded 7 and 2 days before at 9:00 AM. With Pro you can choose up to 5 days and any time.',
             style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 24),

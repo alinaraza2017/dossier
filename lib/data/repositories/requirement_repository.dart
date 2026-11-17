@@ -61,7 +61,7 @@ class RequirementRepository {
       'requirements',
       where: 'scholarshipId = ? AND deletedAt IS NULL',
       whereArgs: [scholarshipId],
-      orderBy: 'sortOrder ASC, id ASC',
+      orderBy: 'sortOrder ASC, createdAt ASC, rowid ASC',
     );
     return maps.map((map) => Requirement.fromMap(map)).toList();
   }

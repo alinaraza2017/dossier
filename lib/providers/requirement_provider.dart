@@ -55,6 +55,12 @@ class RequirementProvider extends ChangeNotifier {
     if (cleanTitle.isEmpty) {
       throw ArgumentError('Requirement title cannot be empty');
     }
+    if (cleanTitle.length > 120) {
+      throw ArgumentError('Keep a requirement under 120 characters');
+    }
+    if (_currentScholarshipId == scholarshipId && _requirements.length >= 50) {
+      throw ArgumentError('An application can have up to 50 requirements');
+    }
 
     try {
       final now = DateTime.now().toUtc().toIso8601String();
@@ -63,7 +69,9 @@ class RequirementProvider extends ChangeNotifier {
         scholarshipId: scholarshipId,
         title: cleanTitle,
         isDone: false,
-        sortOrder: _requirements.length,
+        sortOrder: _requirements.isEmpty
+            ? 0
+            : _requirements.map((r) => r.sortOrder).reduce((a, b) => a > b ? a : b) + 1,
         createdAt: now,
         updatedAt: now,
       );
@@ -76,37 +84,61 @@ class RequirementProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addManyRequirements(
+  /// Adds AI/bulk items to a scholarship. Items that already exist in that
+  /// scholarship (same name, ignoring case and spaces) are skipped.
+  /// Returns (added, skipped).
+  Future<({int added, int skipped})> addManyRequirements(
     String scholarshipId,
     List<String> titles,
   ) async {
-    if (titles.isEmpty) return;
+    if (titles.isEmpty) return (added: 0, skipped: 0);
+
+    String norm(String t) => t.toLowerCase().replaceAll(RegExp(r'\s+'), '');
 
     try {
+      final existing = await _requirementRepo.getForScholarship(scholarshipId);
+      final seen = existing.map((r) => norm(r.title)).toSet();
       final now = DateTime.now().toUtc().toIso8601String();
-      int currentOrder = _requirements.length;
-      final reqs = titles
-          .map((t) => t.trim())
-          .where((t) => t.isNotEmpty)
-          .map(
-            (t) => Requirement(
-              id: _uuid.v4(),
-              scholarshipId: scholarshipId,
-              title: t,
-              isDone: false,
-              sortOrder: currentOrder++,
-              createdAt: now,
-              updatedAt: now,
-            ),
-          )
-          .toList();
+      int currentOrder = existing.isEmpty
+          ? 0
+          : existing.map((r) => r.sortOrder).reduce((a, b) => a > b ? a : b) + 1;
+      int skipped = 0;
+      final reqs = <Requirement>[];
+      for (final raw in titles) {
+        final t = raw.trim();
+        if (t.isEmpty) continue;
+        if (!seen.add(norm(t))) {
+          skipped++;
+          continue;
+        }
+        reqs.add(Requirement(
+          id: _uuid.v4(),
+          scholarshipId: scholarshipId,
+          title: t.length > 120 ? t.substring(0, 120) : t,
+          isDone: false,
+          sortOrder: currentOrder++,
+          createdAt: now,
+          updatedAt: now,
+        ));
+      }
 
       await _requirementRepo.insertMany(reqs);
-      await loadRequirements(scholarshipId);
+      if (_currentScholarshipId == scholarshipId) {
+        await loadRequirements(scholarshipId);
+      }
+      return (added: reqs.length, skipped: skipped);
     } catch (e) {
       _errorMessage = 'Failed to add requirements: $e';
       notifyListeners();
       rethrow;
+    }
+  }
+
+  /// Re-inserts a deleted requirement (used by the Undo snackbar).
+  Future<void> restoreRequirement(Requirement requirement) async {
+    await _requirementRepo.insert(requirement);
+    if (_currentScholarshipId == requirement.scholarshipId) {
+      await loadRequirements(requirement.scholarshipId);
     }
   }
 

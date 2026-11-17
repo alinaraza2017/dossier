@@ -50,6 +50,8 @@ class _SplashScreenState extends State<SplashScreen> {
       final hasCompleted = LocalSettingsService.instance
           .isOnboardingCompleted();
       if (hasCompleted) {
+        // Asks only if the user has not answered yet (no-op otherwise).
+        NotificationService.instance.requestPermissions();
         Navigator.of(context).pushReplacementNamed(AppRoutes.home);
       } else {
         Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);

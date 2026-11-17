@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../services/local_settings_service.dart';
+import '../billing/upgrade_sheet.dart';
 import 'package:provider/provider.dart';
 import '../../app/app_routes.dart';
 import '../../core/constants/app_colors.dart';
@@ -62,15 +64,80 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await context.read<ScholarshipProvider>().deleteScholarship(
-        widget.scholarshipId,
+      final provider = context.read<ScholarshipProvider>();
+      final messenger = ScaffoldMessenger.of(context);
+      final backup =
+          await provider.deleteScholarshipWithBackup(widget.scholarshipId);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('"${scholarship.name}" deleted.'),
+          duration: const Duration(seconds: 5),
+          action: backup.scholarship == null
+              ? null
+              : SnackBarAction(
+                  label: 'Undo',
+                  onPressed: () => provider.restoreScholarship(
+                    backup.scholarship!,
+                    backup.requirements,
+                  ),
+                ),
+        ),
       );
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Scholarship deleted.')));
-        Navigator.of(context).pop();
-      }
+    }
+  }
+
+  bool _remindersActive(Scholarship s) =>
+      s.remindersOn &&
+      !s.isSubmitted &&
+      LocalSettingsService.instance.areRemindersEnabled();
+
+  String _reminderLabel(Scholarship s) {
+    if (s.isSubmitted) return 'Off (submitted)';
+    if (!s.remindersOn) return 'Off for this application';
+    if (!LocalSettingsService.instance.areRemindersEnabled()) {
+      return 'Off in Settings';
+    }
+    return '7 and 2 days before, 9:00 AM';
+  }
+
+  Future<void> _handleStatusChange(
+    Scholarship scholarship,
+    String? newStatus,
+    ({int completed, int total}) progress,
+  ) async {
+    if (newStatus == null || newStatus == scholarship.status) return;
+    final provider = context.read<ScholarshipProvider>();
+
+    // Re-activating a Submitted application counts toward the Free limit (§18).
+    final reactivating = scholarship.isSubmitted && newStatus != 'Submitted';
+    if (reactivating &&
+        provider.activeScholarships.length >=
+            ScholarshipProvider.freeActiveLimit) {
+      await UpgradeSheet.show(
+        context,
+        activeCount: provider.activeScholarships.length,
+      );
+      return;
+    }
+
+    await provider.updateStatus(scholarship.id, newStatus);
+    if (!mounted) return;
+
+    // Gentle warning, but still allowed (§7.1 field rules).
+    if (newStatus == 'Ready to Submit' && progress.completed < progress.total) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${progress.total - progress.completed} requirement(s) are still incomplete.',
+          ),
+        ),
+      );
+    } else if (newStatus == 'Submitted') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Marked as Submitted. Its reminders were cancelled.')),
+      );
     }
   }
 
@@ -180,7 +247,9 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          scholarship.country,
+                          scholarship.country.isEmpty
+                              ? 'No country added'
+                              : scholarship.country,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: AppColors.textSecondary,
                             fontWeight: FontWeight.w500,
@@ -227,11 +296,11 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                               child: Text('Submitted'),
                             ),
                           ],
-                          onChanged: (newStatus) {
-                            if (newStatus != null) {
-                              provider.updateStatus(scholarship.id, newStatus);
-                            }
-                          },
+                          onChanged: (newStatus) => _handleStatusChange(
+                            scholarship,
+                            newStatus,
+                            progress,
+                          ),
                         ),
                       ],
                     ),
@@ -404,11 +473,11 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                     Row(
                       children: [
                         Icon(
-                          scholarship.remindersOn
+                          _remindersActive(scholarship)
                               ? Icons.notifications_active_outlined
                               : Icons.notifications_off_outlined,
                           size: 18,
-                          color: scholarship.remindersOn
+                          color: _remindersActive(scholarship)
                               ? AppColors.secondaryTeal
                               : AppColors.textSecondary,
                         ),
@@ -419,14 +488,14 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text(
-                          scholarship.remindersOn
-                              ? 'Enabled (7 days & 2 days before at 9:00 AM)'
-                              : 'Disabled',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: scholarship.remindersOn
-                                ? AppColors.secondaryTeal
-                                : AppColors.textSecondary,
+                        Expanded(
+                          child: Text(
+                            _reminderLabel(scholarship),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: _remindersActive(scholarship)
+                                  ? AppColors.secondaryTeal
+                                  : AppColors.textSecondary,
+                            ),
                           ),
                         ),
                       ],

@@ -71,7 +71,7 @@ class _SignInScreenState extends State<SignInScreen> {
               onPressed: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Connected with Google! Data safely linked.')),
+                  const SnackBar(content: Text('Preview: Google sign-in (Firebase) is part of Phase 2. Your data stays on this phone.')),
                 );
               },
               style: OutlinedButton.styleFrom(
@@ -176,7 +176,7 @@ class _SignInScreenState extends State<SignInScreen> {
               onPressed: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Verification link sent to email! Local data linked.')),
+                  const SnackBar(content: Text('Preview: email sign-in (Firebase) is part of Phase 2. Your data stays on this phone.')),
                 );
               },
             ),

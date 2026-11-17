@@ -139,9 +139,10 @@ class PaymentSheet extends StatelessWidget {
           PrimaryButton(
             label: 'Subscribe',
             onPressed: () {
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Payment completed via Google Play Billing!')),
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Preview: Dossier Pro (trial and Google Play Billing) is Phase 2 and is not active in this build.')),
               );
             },
           ),

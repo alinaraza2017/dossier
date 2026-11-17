@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/shared_design_widgets.dart';
+import '../billing/pro_paywall_screen.dart';
 
 class Choose5Screen extends StatefulWidget {
   final List<Map<String, dynamic>> applications;
@@ -158,9 +159,10 @@ class _Choose5ScreenState extends State<Choose5Screen> {
 
             Center(
               child: TextButton(
-                onPressed: () {
-                  // Subscribe opens paywall
-                },
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProPaywallScreen()),
+                ),
                 child: const Text(
                   'Subscribe to keep all',
                   style: TextStyle(fontFamily: 'Poppins', color: AppColors.primaryBlue, fontWeight: FontWeight.w600, fontSize: 13),

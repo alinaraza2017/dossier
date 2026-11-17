@@ -17,19 +17,87 @@ class DeadlinesScreen extends StatelessWidget {
     final scholarshipProvider = context.watch<ScholarshipProvider>();
 
     final activeApps = scholarshipProvider.activeScholarships;
+    final submittedApps = scholarshipProvider.submittedScholarships;
     final urgentList = <Scholarship>[];
-    final upcomingList = <Scholarship>[];
+    final dueSoonList = <Scholarship>[];
+    final laterList = <Scholarship>[];
     final overdueList = <Scholarship>[];
 
+    // Labels follow §7.3: Urgent 0-7, Due soon 8-21, Later 22+, Overdue < 0.
     for (final app in activeApps) {
       final days = AppDateUtils.daysRemaining(app.deadlineDateTime);
       if (days < 0) {
         overdueList.add(app);
       } else if (days <= 7) {
         urgentList.add(app);
+      } else if (days <= 21) {
+        dueSoonList.add(app);
       } else {
-        upcomingList.add(app);
+        laterList.add(app);
       }
+    }
+
+    final filter = deadlineProvider.selectedFilter;
+    bool show(DeadlineFilter f) => filter == DeadlineFilter.all || filter == f;
+
+    final sections = <Widget>[];
+    void addSection(
+      DeadlineFilter f,
+      String title,
+      Color color,
+      List<Scholarship> items,
+      String emptyText,
+    ) {
+      if (!show(f)) return;
+      // In "All", hide empty optional groups to keep the screen short.
+      if (filter == DeadlineFilter.all &&
+          items.isEmpty &&
+          f != DeadlineFilter.urgent &&
+          f != DeadlineFilter.overdue) {
+        return;
+      }
+      sections
+        ..add(_buildSectionHeader(title, color))
+        ..add(const SizedBox(height: 8));
+      if (items.isEmpty) {
+        sections.add(f == DeadlineFilter.overdue
+            ? AppCard(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: const Row(
+                  children: [
+                    Icon(Icons.check_circle_outline_rounded,
+                        color: AppColors.successGreen, size: 20),
+                    SizedBox(width: 10),
+                    Text(
+                      'No overdue applications',
+                      style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          color: AppColors.textMain),
+                    ),
+                  ],
+                ),
+              )
+            : _buildEmptySection(emptyText));
+      } else {
+        sections.addAll(items.map((app) =>
+            _buildDeadlineCard(context, scholarshipProvider, app, color)));
+      }
+      sections.add(const SizedBox(height: 20));
+    }
+
+    addSection(DeadlineFilter.urgent, 'Urgent · 0 to 7 days',
+        AppColors.errorRed, urgentList, 'No urgent applications');
+    addSection(DeadlineFilter.dueSoon, 'Due soon · 8 to 21 days',
+        AppColors.warningAmber, dueSoonList, 'Nothing due in 8 to 21 days');
+    addSection(DeadlineFilter.later, 'Later · 22+ days', AppColors.primaryBlue,
+        laterList, 'Nothing due later');
+    addSection(DeadlineFilter.overdue, 'Overdue', AppColors.chipUrgentText,
+        overdueList, 'No overdue applications');
+    if (filter == DeadlineFilter.submitted) {
+      addSection(DeadlineFilter.submitted, 'Submitted', AppColors.successGreen,
+          submittedApps, 'No submitted applications yet');
     }
 
     return Scaffold(
@@ -50,7 +118,7 @@ class DeadlinesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              '${activeApps.length} active · sorted by date',
+              '${activeApps.length} active · ${submittedApps.length} submitted · sorted by date',
               style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 12,
@@ -61,77 +129,38 @@ class DeadlinesScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Filter Chips (Fig 13.7)
-            Row(
-              children: [
-                _buildFilterChip(
-                  label: 'All',
-                  isSelected: deadlineProvider.selectedFilter == DeadlineFilter.all,
-                  onTap: () => deadlineProvider.setFilter(DeadlineFilter.all),
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  label: 'Urgent',
-                  isSelected: deadlineProvider.selectedFilter == DeadlineFilter.urgent,
-                  onTap: () => deadlineProvider.setFilter(DeadlineFilter.urgent),
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  label: 'Upcoming',
-                  isSelected: deadlineProvider.selectedFilter == DeadlineFilter.dueSoon,
-                  onTap: () => deadlineProvider.setFilter(DeadlineFilter.dueSoon),
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  label: 'Overdue',
-                  isSelected: deadlineProvider.selectedFilter == DeadlineFilter.overdue,
-                  onTap: () => deadlineProvider.setFilter(DeadlineFilter.overdue),
-                ),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final (label, f) in [
+                    ('All', DeadlineFilter.all),
+                    ('Urgent', DeadlineFilter.urgent),
+                    ('Due soon', DeadlineFilter.dueSoon),
+                    ('Later', DeadlineFilter.later),
+                    ('Overdue', DeadlineFilter.overdue),
+                    ('Submitted', DeadlineFilter.submitted),
+                  ]) ...[
+                    _buildFilterChip(
+                      label: label,
+                      isSelected: filter == f,
+                      onTap: () => deadlineProvider.setFilter(f),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ],
+              ),
             ),
 
             const SizedBox(height: 20),
 
-            // URGENT SECTION
-            _buildSectionHeader('Urgent · within 7 days', AppColors.errorRed),
-            const SizedBox(height: 8),
-            if (urgentList.isEmpty)
-              _buildEmptySection('No urgent applications')
+            if (activeApps.isEmpty && submittedApps.isEmpty)
+              _buildEmptySection(
+                  'No applications yet. Add your first scholarship from Home.')
             else
-              ...urgentList.map((app) => _buildDeadlineCard(context, scholarshipProvider, app, AppColors.errorRed)),
+              ...sections,
 
-            const SizedBox(height: 20),
-
-            // UPCOMING SECTION
-            _buildSectionHeader('Upcoming', AppColors.warningAmber),
-            const SizedBox(height: 8),
-            if (upcomingList.isEmpty)
-              _buildEmptySection('No upcoming applications')
-            else
-              ...upcomingList.map((app) => _buildDeadlineCard(context, scholarshipProvider, app, AppColors.warningAmber)),
-
-            const SizedBox(height: 20),
-
-            // OVERDUE SECTION
-            _buildSectionHeader('Overdue', AppColors.errorRed),
-            const SizedBox(height: 8),
-            if (overdueList.isEmpty)
-              AppCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: const [
-                    Icon(Icons.check_circle_outline_rounded, color: AppColors.successGreen, size: 20),
-                    SizedBox(width: 10),
-                    Text(
-                      'No overdue applications',
-                      style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textMain),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ...overdueList.map((app) => _buildDeadlineCard(context, scholarshipProvider, app, AppColors.errorRed)),
-
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
           ],
         ),
       ),
@@ -247,7 +276,7 @@ class DeadlinesScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Due ${AppDateUtils.formatDisplay(app.deadlineDateTime)} · $remainingReqs requirements left',
+                    'Due ${AppDateUtils.formatDisplay(app.deadlineDateTime)} · ${progress.total == 0 ? 'No requirements yet' : remainingReqs == 0 ? 'All requirements done' : remainingReqs == 1 ? '1 requirement left' : '$remainingReqs requirements left'}',
                     style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 11,
@@ -261,7 +290,11 @@ class DeadlinesScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  days < 0 ? 'Overdue' : '$days',
+                  app.isSubmitted
+                      ? 'Done'
+                      : days < 0
+                          ? '${-days}'
+                          : '$days',
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 20,
@@ -269,9 +302,15 @@ class DeadlinesScreen extends StatelessWidget {
                     color: indicatorColor,
                   ),
                 ),
-                if (days >= 0)
-                  const Text(
-                    'days left',
+                if (!app.isSubmitted)
+                  Text(
+                    days < 0
+                        ? (days == -1 ? 'day overdue' : 'days overdue')
+                        : days == 0
+                            ? 'due today'
+                            : days == 1
+                                ? 'day left'
+                                : 'days left',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 10,
