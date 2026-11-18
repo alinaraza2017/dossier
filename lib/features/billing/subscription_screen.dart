@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/shared_design_widgets.dart';
+import 'package:provider/provider.dart';
+import '../../core/utils/date_utils.dart';
+import '../../providers/scholarship_provider.dart';
+import '../applications/choose_5_screen.dart';
+import '../auth/sign_in_screen.dart';
+import '../trial/trial_ended_screen.dart';
+import '../vault/document_vault_screen.dart';
+import 'payment_sheet.dart';
+import 'pro_paywall_screen.dart';
 
 class SubscriptionScreen extends StatelessWidget {
   const SubscriptionScreen({super.key});
@@ -8,6 +17,7 @@ class SubscriptionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeCount = context.watch<ScholarshipProvider>().activeScholarships.length;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
@@ -26,7 +36,7 @@ class SubscriptionScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         children: [
-          // Status Card (Fig 13.13)
+          // Status Card (Fig 13.13): the real current plan
           AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,19 +44,13 @@ class SubscriptionScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.workspace_premium_rounded, color: AppColors.proGold, size: 18),
-                        SizedBox(width: 6),
-                        Text(
-                          'Pro free trial',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    const Text(
+                      'Free plan',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -58,28 +62,18 @@ class SubscriptionScreen extends StatelessWidget {
                         'Active',
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          color: AppColors.chipSubmittedText,
                           fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.chipSubmittedText,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  '5 days left · ends 12 Oct 2026, 10:00 AM',
-                  style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: const LinearProgressIndicator(
-                    value: 0.3,
-                    minHeight: 6,
-                    backgroundColor: AppColors.border,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.proGold),
-                  ),
+                const SizedBox(height: 4),
+                Text(
+                  '$activeCount of 5 active applications · no account needed · works offline',
+                  style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -88,41 +82,36 @@ class SubscriptionScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           const Text(
-            'Your trial timeline',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            'How the 7-day Pro trial works',
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
-          // Timeline Card (Fig 13.13)
           AppCard(
             child: Column(
               children: [
                 _buildTimelineItem(
-                  isDone: true,
-                  title: 'Trial started',
-                  subtitle: 'Mon 5 Oct, 10:00 AM',
+                  isDone: false,
+                  title: 'Day 1: trial starts on the server',
+                  subtitle: 'Needs a verified account. No card is asked.',
                   dotColor: AppColors.successGreen,
                 ),
                 _buildTimelineItem(
                   isDone: false,
-                  title: 'Reminder: 2 days left',
-                  subtitle: 'Sat 10 Oct, 10:00 AM',
+                  title: 'Day 6: "2 days left" reminder',
+                  subtitle: 'Pick a plan to keep Pro, or continue with Free.',
                   dotColor: AppColors.warningAmber,
                 ),
                 _buildTimelineItem(
                   isDone: false,
-                  title: 'Reminder: ends tomorrow',
-                  subtitle: 'Sun 11 Oct, 10:00 AM',
+                  title: 'Day 7: "Ends tomorrow" reminder',
+                  subtitle: 'Exactly 168 hours after it started.',
                   dotColor: AppColors.warningAmber,
                 ),
                 _buildTimelineItem(
                   isDone: false,
-                  title: 'Trial ends, choose a plan or stay Free',
-                  subtitle: 'Mon 12 Oct, 10:00 AM',
+                  title: 'Trial ends: choose a plan or stay Free',
+                  subtitle: 'Nothing is charged automatically. No data is lost.',
                   dotColor: AppColors.primaryBlue,
                   isLast: true,
                 ),
@@ -130,9 +119,8 @@ class SubscriptionScreen extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // Information Note
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -140,46 +128,78 @@ class SubscriptionScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Text(
-              'No payment is taken during the trial. If you do not choose a plan, Dossier moves to Free and keeps all your data.',
+              'Dossier Pro is Phase 2 of this project. The trial and Google Play Billing are verified on the server (Cloud Functions), so they are not active in this build. The screens below are design previews.',
               style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.textMain),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          PrimaryButton(
+            label: 'See Dossier Pro',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProPaywallScreen()),
             ),
           ),
 
           const SizedBox(height: 24),
 
-          PrimaryButton(
-            label: 'Choose a plan',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Opening Google Play plans...')),
-              );
-            },
+          const Text(
+            'Pro design previews',
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.w600),
           ),
-
-          const SizedBox(height: 14),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: () {},
-                child: const Text(
-                  'Restore purchases',
-                  style: TextStyle(fontFamily: 'Poppins', color: AppColors.primaryBlue, fontSize: 13),
-                ),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: const Text(
-                  'Manage in Google Play',
-                  style: TextStyle(fontFamily: 'Poppins', color: AppColors.primaryBlue, fontSize: 13),
-                ),
-              ),
-            ],
+          const SizedBox(height: 8),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _previewTile(context, Icons.login_rounded, 'Sign in / Create account',
+                    () => _push(context, const SignInScreen())),
+                const Divider(height: 1, indent: 16),
+                _previewTile(context, Icons.payment_rounded, 'Google Play payment sheet',
+                    () => PaymentSheet.show(context)),
+                const Divider(height: 1, indent: 16),
+                _previewTile(context, Icons.hourglass_bottom_rounded, 'Trial ended',
+                    () => _push(context, const TrialEndedScreen())),
+                const Divider(height: 1, indent: 16),
+                _previewTile(context, Icons.checklist_rounded, 'Choose 5 to keep active', () {
+                  final provider = context.read<ScholarshipProvider>();
+                  final apps = provider.activeScholarships
+                      .map((s) => {
+                            'id': s.id,
+                            'name': s.name,
+                            'deadline': AppDateUtils.formatDisplay(s.deadlineDateTime),
+                            'progress': provider.getProgressPercent(s.id),
+                          })
+                      .toList();
+                  _push(context, Choose5Screen(applications: apps));
+                }),
+                const Divider(height: 1, indent: 16),
+                _previewTile(context, Icons.folder_open_outlined, 'Document vault',
+                    () => _push(context, const DocumentVaultScreen())),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  static void _push(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
+  Widget _previewTile(BuildContext context, IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: AppColors.primaryBlue, size: 20),
+      title: Text(title, style: const TextStyle(fontFamily: 'Poppins', fontSize: 13)),
+      trailing: const Text(
+        'Preview',
+        style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.textSecondary),
+      ),
+      onTap: onTap,
     );
   }
 

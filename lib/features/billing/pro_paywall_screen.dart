@@ -27,7 +27,7 @@ class _ProPaywallScreenState extends State<ProPaywallScreen> {
           TextButton(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Restoring purchases...')),
+                const SnackBar(content: Text('No purchases to restore. Billing is part of Phase 2.')),
               );
             },
             child: const Text('Restore', style: TextStyle(color: AppColors.primaryBlue)),
@@ -86,7 +86,7 @@ class _ProPaywallScreenState extends State<ProPaywallScreen> {
           _buildFeature('Document vault', 'Store passport, IELTS and transcripts'),
           _buildFeature('Export, calendar and dark mode', 'PDF report, calendar adding, dark theme'),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 28),
 
           // Yearly Plan Card (Pre-selected)
           GestureDetector(
@@ -142,7 +142,7 @@ class _ProPaywallScreenState extends State<ProPaywallScreen> {
                     ],
                   ),
                   Positioned(
-                    top: -24,
+                    top: -37,
                     right: 0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -220,9 +220,8 @@ class _ProPaywallScreenState extends State<ProPaywallScreen> {
             label: 'Start 7-day free trial',
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Starting 7-day free trial...')),
+                const SnackBar(content: Text('Preview: Dossier Pro (trial and Google Play Billing) is Phase 2 and is not active in this build.')),
               );
-              Navigator.pop(context);
             },
           ),
 
@@ -231,6 +230,19 @@ class _ProPaywallScreenState extends State<ProPaywallScreen> {
             'Free for 7 days, no card needed now. We remind you 2 days and 1 day before it ends. Pay only if you choose a plan. Cancel anytime in Google Play.',
             textAlign: TextAlign.center,
             style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.lightBlueSurface,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Text(
+              'Phase 2 preview: prices come from Google Play and the trial is started by the server, so purchasing is not active in this build.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.textMain),
+            ),
           ),
           const SizedBox(height: 24),
         ],

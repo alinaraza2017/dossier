@@ -5,6 +5,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/shared_design_widgets.dart';
 import '../../providers/scholarship_provider.dart';
 import '../billing/pro_paywall_screen.dart';
+import 'package:intl/intl.dart';
+import '../billing/upgrade_sheet.dart';
+import '../navigation/main_navigation.dart';
 import 'widgets/scholarship_card.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -22,9 +25,7 @@ class HomeScreen extends StatelessWidget {
           width: 56,
           height: 56,
           child: FloatingActionButton(
-            onPressed: () {
-              Navigator.of(context).pushNamed(AppRoutes.addApplication);
-            },
+            onPressed: () => openAddApplication(context),
             backgroundColor: AppColors.primaryBlue,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
@@ -41,110 +42,30 @@ class HomeScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             children: [
-              // Header: Good morning, Alina (Fig 13.3)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Good morning, Alina',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textMain,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Wednesday, 7 Oct 2026',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: AppColors.lightBlueSurface,
-                    child: const Text(
-                      'A',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryBlue,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ],
+              // Header: greeting + today's date (Fig 13.3)
+              Text(
+                _greeting(),
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textMain,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                DateFormat('EEEE, d MMM yyyy').format(DateTime.now()),
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
               ),
 
               const SizedBox(height: 16),
 
-              // Pro Trial Banner (Fig 13.3)
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProPaywallScreen()),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.proGoldLight,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppColors.proGold.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.workspace_premium_rounded,
-                        color: AppColors.proGoldText,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Pro trial · 5 days left',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.proGoldText,
-                              ),
-                            ),
-                            SizedBox(height: 1),
-                            Text(
-                              'Ends 12 Oct, 10:00 AM. No card needed until then.',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 11,
-                                color: AppColors.proGoldText,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppColors.proGoldText,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // Plan card: everyone starts on Free (§1.3). Tapping shows Pro.
+              _PlanBanner(activeCount: provider.activeScholarships.length),
 
               const SizedBox(height: 16),
 
@@ -190,9 +111,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {
-                      // Switch to tab 1 (Deadlines)
-                    },
+                    onPressed: () => MainNavigation.switchTab(context, 1),
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: Size.zero,
@@ -268,12 +187,51 @@ class HomeScreen extends StatelessWidget {
                   );
                 }),
 
+              // Submitted applications stay reachable (read, edit, reopen)
+              if (provider.submittedScholarships.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Submitted (${provider.submittedScholarships.length})',
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textMain,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...provider.submittedScholarships.map((app) {
+                  final progress = provider.getProgressFor(app.id);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: ScholarshipCard(
+                      scholarship: app,
+                      completedCount: progress.completed,
+                      totalCount: progress.total,
+                      onTap: () {
+                        Navigator.of(context).pushNamed(
+                          AppRoutes.applicationDetails,
+                          arguments: app.id,
+                        );
+                      },
+                    ),
+                  );
+                }),
+              ],
+
               const SizedBox(height: 80),
             ],
           ),
         ),
       ),
     );
+  }
+
+  static String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
   }
 
   Widget _buildSummaryCard(
@@ -305,6 +263,81 @@ class HomeScreen extends StatelessWidget {
                 color: AppColors.textSecondary,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens Add Application, or the Upgrade sheet when the Free limit of
+/// 5 active applications is reached (§7.1, Flow 10). Submitted do not count.
+void openAddApplication(BuildContext context) {
+  final provider = context.read<ScholarshipProvider>();
+  final active = provider.activeScholarships.length;
+  if (active >= ScholarshipProvider.freeActiveLimit) {
+    UpgradeSheet.show(context, activeCount: active);
+    return;
+  }
+  Navigator.of(context).pushNamed(AppRoutes.addApplication);
+}
+
+class _PlanBanner extends StatelessWidget {
+  final int activeCount;
+  const _PlanBanner({required this.activeCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final limit = ScholarshipProvider.freeActiveLimit;
+    final atLimit = activeCount >= limit;
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProPaywallScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.verified_user_outlined,
+                color: AppColors.primaryBlue, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Free plan · $activeCount of $limit active',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    atLimit
+                        ? 'Limit reached · submitted ones do not count'
+                        : 'Works offline, no account needed.',
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const ProChip(),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppColors.textSecondary, size: 20),
           ],
         ),
       ),

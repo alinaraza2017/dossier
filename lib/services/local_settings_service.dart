@@ -21,6 +21,26 @@ class LocalSettingsService {
     _prefs = mockPrefs ?? await SharedPreferences.getInstance();
   }
 
+  static const String _keyRemindersEnabled = 'reminders_enabled';
+  static const String _keyBillingAlerts = 'billing_alerts_enabled';
+
+  /// Global "Deadline reminders" switch in Settings › Reminders (§17).
+  bool areRemindersEnabled() {
+    return _prefs?.getBool(_keyRemindersEnabled) ?? true;
+  }
+
+  Future<bool> setRemindersEnabled(bool value) async {
+    return await _prefs?.setBool(_keyRemindersEnabled, value) ?? false;
+  }
+
+  bool areBillingAlertsEnabled() {
+    return _prefs?.getBool(_keyBillingAlerts) ?? true;
+  }
+
+  Future<bool> setBillingAlertsEnabled(bool value) async {
+    return await _prefs?.setBool(_keyBillingAlerts, value) ?? false;
+  }
+
   bool isOnboardingCompleted() {
     return _prefs?.getBool(_keyOnboardingCompleted) ?? false;
   }

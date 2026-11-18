@@ -5,6 +5,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../core/utils/date_utils.dart';
 import '../data/models/scholarship.dart';
+import 'local_settings_service.dart';
 
 class NotificationService {
   static const String channelId = 'dossier_deadline_channel';
@@ -68,12 +69,13 @@ class NotificationService {
     final android = _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
-    if (android != null) {
-      final granted =
-          await android.requestNotificationsPermission() ?? false;
-      return granted;
+    if (android == null) return true;
+    try {
+      return await android.requestNotificationsPermission() ?? false;
+    } catch (e) {
+      debugPrint('Notification permission request failed: $e');
+      return false;
     }
-    return true;
   }
 
   static int getNotificationId(String scholarshipId, int offsetDays) {
@@ -89,7 +91,9 @@ class NotificationService {
 
     await cancelForScholarship(sId);
 
-    if (!scholarship.remindersOn || scholarship.isSubmitted) {
+    if (!scholarship.remindersOn ||
+        scholarship.isSubmitted ||
+        !LocalSettingsService.instance.areRemindersEnabled()) {
       return;
     }
 

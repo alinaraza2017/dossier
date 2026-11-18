@@ -10,7 +10,7 @@ class AiPriorityItem {
   final String reason;
   final int daysRemaining;
   final int progressPercent;
-  final int? scholarshipId;
+  final String? scholarshipId;
 
   const AiPriorityItem({
     required this.rank,
@@ -160,7 +160,7 @@ ${jsonEncode(sanitizedData)}
             reason: reason,
             daysRemaining: localMatch['daysRemaining'] as int? ?? 0,
             progressPercent: localMatch['progressPercent'] as int? ?? 0,
-            scholarshipId: localMatch['id'] as int?,
+            scholarshipId: localMatch['id']?.toString(),
           ),
         );
       }
@@ -227,7 +227,7 @@ ${jsonEncode(sanitizedData)}
   // Core API Request Helper (Google Gemini 1.5 Flash default)
   // ==========================================
   Future<String> _callGeminiApi(String prompt, String apiKey) async {
-    final model = _settings.getAiModel() ?? 'gemini-1.5-flash';
+    final model = _settings.getAiModel() ?? 'gemini-2.5-flash';
     final url = Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey',
     );
@@ -343,20 +343,29 @@ ${jsonEncode(sanitizedData)}
           RegExp(r'[\r\n,;•\-\*\.]+|and\s+(?=[a-z])', caseSensitive: false),
         )
         .map((s) => s.trim())
-        .where((s) => s.length > 2)
+        .where((s) => s.length >= 2)
         .toList();
 
     for (var segment in segments) {
       // Clean leading conversational text
-      segment = segment
-          .replaceAll(
-            RegExp(
-              r'^(applicants must provide|must have|including|provide a valid|provide a|provide|a valid|a)\s+',
-              caseSensitive: false,
-            ),
-            '',
-          )
-          .trim();
+      // Strip lead-in phrases repeatedly, e.g. "Applicants must submit a valid ..."
+      final leadIn = RegExp(
+        r'^(?:(?:applicants?|students?|candidates?|you)\s+)?'
+        r'(?:(?:must|should|will|need to|needs to|are required to|is required to|have to)\s+)?'
+        r'(?:also\s+)?'
+        r'(?:submit|provide|upload|include|including|send|attach|bring|have|need|requires?|required)?\s*'
+        r'(?:(?:a|an|the|your|one|valid|copy of|copies of|scanned|official|recent)\s+)*',
+        caseSensitive: false,
+      );
+      String previous;
+      do {
+        previous = segment;
+        segment = segment.replaceFirst(leadIn, '').trim();
+      } while (segment != previous && segment.isNotEmpty);
+      segment = segment.replaceFirst(
+        RegExp(r'^(?:also|plus|as well as)\s+', caseSensitive: false),
+        '',
+      ).trim();
       if (segment.isEmpty) continue;
 
       // Check for quantity (e.g., "two recommendation letters" or "2 recommendation letters")
@@ -450,7 +459,7 @@ ${jsonEncode(sanitizedData)}
           reason: reason,
           daysRemaining: days,
           progressPercent: prog,
-          scholarshipId: app['id'] as int?,
+          scholarshipId: app['id']?.toString(),
         ),
       );
     }

@@ -165,7 +165,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
               label: 'Subscribe, add payment',
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Opening Google Play Billing subscription...')),
+                  const SnackBar(content: Text('Preview: Dossier Pro (trial and Google Play Billing) is Phase 2 and is not active in this build.')),
                 );
               },
             ),

@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/widgets/app_button.dart';
 import '../../services/local_settings_service.dart';
+import '../../services/notification_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -37,6 +38,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _completeOnboarding() async {
     await LocalSettingsService.instance.setOnboardingCompleted(true);
+    // Android 13+: notifications need runtime permission for reminders.
+    await NotificationService.instance.requestPermissions();
     if (!mounted) return;
     Navigator.of(context).pushReplacementNamed(AppRoutes.home);
   }

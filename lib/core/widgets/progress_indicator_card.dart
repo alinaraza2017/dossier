@@ -47,7 +47,7 @@ class ProgressIndicatorCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '$progressPercent%',
+                totalCount == 0 ? '–' : '$progressPercent%',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.secondaryTeal,
@@ -70,7 +70,7 @@ class ProgressIndicatorCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             totalCount == 0
-                ? '0 of 0 completed — No requirements added yet'
+                ? 'No requirements yet. Add them from the checklist.'
                 : '$completedCount of $totalCount requirements completed',
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,

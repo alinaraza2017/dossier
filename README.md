@@ -4,6 +4,7 @@
 
 **Course:** Software Construction and Development (FA23-BSE-015)  
 **Target Platform:** Flutter Mobile Application (Android-first)  
+**Status:** Phase 1 (core offline planner, Free plan) implemented; Phase 2 (Dossier Pro) designed with preview screens. See `docs/gap_report.md`.  
 **Architecture:** Feature-driven MVVM with Provider, Local SQLite (`sqflite`), Local Notifications (`flutter_local_notifications`), and Calm Academic Design System.
 
 ---
@@ -46,9 +47,8 @@ Students often apply to several prestigious opportunities concurrently (e.g., Er
    - Inline creation, rename dialogs, and deletion confirmations.
    - Integrated "Generate Checklist with AI" shortcut.
 5. **Deadlines Overview:**
-   - Comprehensive filter chips: *All*, *Urgent*, *Due Soon*, *Later*, *Overdue*, *Submitted*.
+   - Working filter chips: *All*, *Urgent* (0–7 days), *Due soon* (8–21), *Later* (22+), *Overdue*, *Submitted*.
    - Calendar date calculations normalized to midnight.
-   - One-tap reminder toggling per scholarship with automatic notification syncing.
 6. **Local Deadline Reminders:**
    - Automated scheduling for 7 days and 2 days before deadline at 9:00 AM local time.
    - Deterministic notification IDs (`scholarshipId * 10 + offset`).
@@ -65,7 +65,7 @@ Students often apply to several prestigious opportunities concurrently (e.g., Er
 
 - **Framework:** Flutter 3.38 (Dart 3.10)
 - **UI Components:** Material 3 with customized Calm Academic theme
-- **Typography:** Poppins (`google_fonts`)
+- **Typography:** Poppins (bundled in `assets/fonts`, works offline)
 - **State Management:** `provider` (ChangeNotifier)
 - **Local Persistence:** SQLite via `sqflite`
 - **Notifications:** `flutter_local_notifications` and `timezone`

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/scholarship_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/utils/validators.dart';
@@ -94,6 +96,37 @@ class _ApplicationFormState extends State<ApplicationForm> {
       return;
     }
 
+    // Past deadline is allowed only after confirmation (§7.1).
+    final isPast = AppDateUtils.daysRemaining(_selectedDeadline) < 0;
+    final deadlineChanged = widget.initialScholarship == null ||
+        AppDateUtils.formatIso(widget.initialScholarship!.deadlineDateTime) !=
+            AppDateUtils.formatIso(_selectedDeadline);
+    if (isPast && deadlineChanged) {
+      final ok = await _confirm(
+        'This date has passed',
+        'The deadline ${AppDateUtils.formatDisplay(_selectedDeadline)} is in the past. Save anyway?',
+      );
+      if (ok != true) return;
+    }
+
+    // Warn (but allow) if name and deadline both match another application.
+    if (!mounted) return;
+    final name = _nameController.text.trim().toLowerCase();
+    final iso = AppDateUtils.formatIso(_selectedDeadline);
+    final duplicate = context.read<ScholarshipProvider>().scholarships.any(
+          (s) =>
+              s.id != widget.initialScholarship?.id &&
+              s.name.trim().toLowerCase() == name &&
+              s.deadline == iso,
+        );
+    if (duplicate) {
+      final ok = await _confirm(
+        'Possible duplicate',
+        'An application with the same name and deadline already exists. Save anyway?',
+      );
+      if (ok != true) return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
@@ -105,7 +138,7 @@ class _ApplicationFormState extends State<ApplicationForm> {
         deadline: AppDateUtils.formatIso(_selectedDeadline),
         link: _linkController.text.trim().isEmpty
             ? null
-            : _linkController.text.trim(),
+            : Validators.normalizeUrl(_linkController.text),
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
@@ -124,6 +157,26 @@ class _ApplicationFormState extends State<ApplicationForm> {
     }
   }
 
+  Future<bool?> _confirm(String title, String message) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save anyway'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -138,18 +191,16 @@ class _ApplicationFormState extends State<ApplicationForm> {
             label: 'Scholarship Name *',
             hint: 'e.g. Erasmus Mundus, Chevening, Fulbright',
             controller: _nameController,
-            validator: (val) =>
-                Validators.validateRequired(val, 'Scholarship name'),
+            validator: Validators.validateName,
           ),
           const SizedBox(height: 16),
 
           // Country or Region
           AppTextField(
-            label: 'Country or Region *',
+            label: 'Country or Region (Optional)',
             hint: 'e.g. Europe, United Kingdom, USA, Germany',
             controller: _countryController,
-            validator: (val) =>
-                Validators.validateRequired(val, 'Country or region'),
+            validator: Validators.validateCountry,
           ),
           const SizedBox(height: 16),
 
@@ -231,12 +282,13 @@ class _ApplicationFormState extends State<ApplicationForm> {
                 'e.g. Requires 2 reference letters from university professors...',
             controller: _notesController,
             maxLines: 3,
+            validator: Validators.validateNotes,
           ),
           const SizedBox(height: 16),
 
           // Reminder Switch Card
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: AppColors.cardSurface,
               borderRadius: BorderRadius.circular(10),
