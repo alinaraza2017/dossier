@@ -279,6 +279,46 @@ Follow-up: *"Then what is your contribution?"* The idea, the requirements docume
 **Q60. Sir opens `docs/gap_report.md`.**
 A: It is an honest status table: Phase 1 implemented and tested; Phase 2 designed, with preview screens and drafted server code. (An older version overstated completion; it was corrected.)
 
+
+## 15. FYP Idea Breakdown points (Sir's template)
+
+**Q61. What is your domain, sub-domain and industry?**
+A: Domain: Mobile (Android, Flutter). Sub-domain: Generative AI / NLP; an LLM extracts checklists from text, ranks priorities and writes summaries. Industry: Education (EdTech, scholarship applications).
+Follow-up: *"Is AI the core, or just a feature?"* The core is the planner (tracking deadlines and requirements). AI is the assistive layer that saves typing and helps prioritise. The app is fully useful without it, which is why it also works offline.
+
+**Q62. Who are the actors?**
+A: The primary actor is the Student (Free user, or Pro subscriber in Phase 2). System actors: the AI service (Gemini), Google Play Billing (Phase 2) and Android's notification scheduler. There is no admin, because an admin panel is out of scope in the document.
+Follow-up: *"Why no admin?"* There is no shared content to moderate. Each student only manages their own private data.
+
+**Q63. What is your selling mode?**
+A: Freemium subscription sold through Google Play: Free forever; Pro at Rs 499 a month or Rs 3,999 a year, with a no-card 7-day trial. No ads, no data selling.
+
+**Q64. Define your scope boundary.**
+A: In scope: application management, checklist, deadlines and reminders, the 3 AI features, Settings (Phase 1, working); accounts and sync, Pro trial and billing, vault and export (Phase 2). Out of scope: scraping or a scholarship database, admin panel or web version, a general chatbot, payments outside Google Play, iOS release for now.
+
+**Q65. Explain your tech stack as frontend, backend, database and middleware.**
+A:
+- Frontend: Flutter/Dart with Provider.
+- Backend: none in Phase 1 (on-device logic); Phase 2 uses Firebase Cloud Functions (Node.js 20, TypeScript).
+- Database: SQLite (sqflite) plus shared_preferences; Phase 2 adds Firestore and Firebase Storage.
+- Middleware: the repository layer, the http client for AI, and the notification plugin; Phase 2 adds Firebase SDKs and the Play Billing Library.
+Follow-up: *"Where is the middleware exactly?"* Between the UI and data: providers call repositories, so screens never write SQL. Between the app and external services: AiService wraps the Gemini REST call, and NotificationService wraps the Android alarm and notification APIs.
+
+**Q66. Which third-party APIs do you use?**
+A: Google Gemini (generateContent REST API, optional with a key), plus Android OS services (notifications, alarms, share sheet, browser). Phase 2: Firebase Auth/Firestore/Storage/FCM, Google Play Billing, Play Developer API and Real-time Developer Notifications.
+
+**Q67. Are you using an LLM, RAG, LLaMA, LangChain or a dataset?**
+A: An LLM (Google Gemini 2.5 Flash) with prompt engineering and strict JSON output, plus a rule-based NLP fallback. No RAG, because there is no knowledge base to retrieve from; the input is the student's own pasted text. No LLaMA, because self-hosting needs a GPU server and costs more. No LangChain, because each task is a single prompt with no chains or agents. No dataset, because we use a pre-trained model and do not train anything.
+Follow-up: *"How do you stop the LLM hallucinating items?"* The prompt says to extract only items from the given text, as a JSON array of short names (max 30, each under 60 characters). The app parses and validates the JSON. And the student always reviews and edits the list before saving.
+Follow-up: *"When would RAG make sense?"* In the future "scholarship discovery" feature: retrieving matching scholarships from a curated database before the LLM explains them.
+
+**Q68. What are your major constraints?**
+A: Internet for the LLM (handled with the offline fallback). Google Play Billing being mandatory, with its 15% fee. Android 13 notification permission and Android 12 exact-alarm limits. App size under 25 MB. AI cost and rate limits (handled with the monthly allowance). Privacy. And Phase 2 needing a Firebase project, a Play Console merchant account, and semester time.
+
+**Q69. What related systems exist, and why build Dossier?**
+A: Spreadsheets, to-do/notes apps (Google Tasks, Todoist, Notion), scholarship portals (HEC scholarship pages, DAAD database, ScholarshipPortal), and Common App. Portals help you find scholarships but don't track your applications. To-do apps lack the scholarship model (per-application progress, urgency, requirement extraction). Common App only covers its member US colleges. Dossier is a planner for any scholarship from any source, offline, with an AI checklist.
+Follow-up: *"Couldn't Notion do this with a template?"* Partly, but it has no deadline-relative reminders per application, no automatic urgency groups, and no AI extraction tuned for requirements. It also needs an account and internet to sync.
+
 ---
 
 ## Quick-recall facts
@@ -294,3 +334,4 @@ A: It is an honest status table: Phase 1 implemented and tested; Phase 2 designe
 | Tests | 34 passing · `flutter analyze` 0 issues |
 | DB | SQLite, version 2, UUIDs, FK cascade |
 | Flutter / Dart | 3.38 / 3.10 |
+| Breakdown | Mobile · GenAI/NLP · Education · Student actor · Freemium via Google Play |
